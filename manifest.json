@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "Job Capture",
-  "version": "1.0.0",
-  "description": "Extract job title and company from job postings and save to Google Sheets.",
+  "version": "2.0.0",
+  "description": "Extract job info from job postings and save to Google Sheets.",
   "permissions": [
     "activeTab",
     "scripting",
@@ -12,13 +12,6 @@
     "default_popup": "popup.html",
     "default_title": "Job Capture"
   },
-  "content_scripts": [
-    {
-      "matches": ["<all_urls>"],
-      "js": ["content.js"],
-      "run_at": "document_idle"
-    }
-  ],
   "icons": {
     "16": "icons/icon16.png",
     "48": "icons/icon48.png",
