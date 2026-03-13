@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Job Capture</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <div class="container">
+      <!-- Header -->
+      <header class="header">
+        <span class="logo">&#128203;</span>
+        <h1 class="title">Job Capture</h1>
+        <button
+          id="btn-settings-toggle"
+          class="btn-icon"
+          title="Configure Apps Script URL"
+          aria-expanded="false"
+          aria-controls="settings-panel"
+        >
+          &#9881;
+        </button>
+      </header>
+
+      <!-- Settings panel (collapsible) -->
+      <div id="settings-panel" class="settings-panel hidden" role="region" aria-label="Settings">
+        <label class="field-label" for="input-script-url">Apps Script Web App URL</label>
+        <input
+          id="input-script-url"
+          class="input-url"
+          type="url"
+          placeholder="https://script.google.com/macros/s/…/exec"
+          spellcheck="false"
+          autocomplete="off"
+        />
+        <label class="field-label" for="input-token">Secret Token</label>
+        <input
+          id="input-token"
+          class="input-url"
+          type="password"
+          placeholder="Same value as SECRET_TOKEN in appsscript.gs"
+          spellcheck="false"
+          autocomplete="off"
+        />
+        <label class="field-label" for="input-sheet-url">Google Sheet URL (optional)</label>
+        <input
+          id="input-sheet-url"
+          class="input-url"
+          type="url"
+          placeholder="https://docs.google.com/spreadsheets/d/…"
+          spellcheck="false"
+          autocomplete="off"
+        />
+        <label class="field-label" for="input-sheet-name">Sheet Tab Name</label>
+        <input
+          id="input-sheet-name"
+          class="input-url"
+          type="text"
+          placeholder="Sheet1"
+          spellcheck="false"
+          autocomplete="off"
+        />
+        <button id="btn-save-settings" class="btn btn-settings">Save Settings</button>
+        <div id="settings-status" class="settings-status hidden"></div>
+      </div>
+
+      <!-- Main content -->
+      <main class="main">
+        <!-- Extracted fields -->
+        <div class="field-group">
+          <label class="field-label">Job Title</label>
+          <div class="field-value" id="field-role">—</div>
+        </div>
+
+        <div class="field-group">
+          <label class="field-label">Company</label>
+          <div class="field-value" id="field-company">—</div>
+        </div>
+
+        <div class="field-group">
+          <label class="field-label">URL</label>
+          <div class="field-value field-url" id="field-url">—</div>
+        </div>
+
+        <div class="field-group">
+          <label class="field-label">Timestamp</label>
+          <div class="field-value" id="field-timestamp">—</div>
+        </div>
+
+        <div class="field-group">
+          <label class="field-label">Job Description</label>
+          <div class="field-value field-description" id="field-description">—</div>
+        </div>
+
+        <!-- Actions -->
+        <div class="actions">
+          <button id="btn-extract" class="btn btn-primary">Extract Job Info</button>
+          <button id="btn-save" class="btn btn-success" disabled>Save to Sheet</button>
+        </div>
+        <div class="actions-secondary">
+          <button id="btn-open-sheet" class="btn btn-secondary" disabled>Open Sheet ↗</button>
+        </div>
+
+        <!-- Status message -->
+        <div id="status" class="status hidden" role="status" aria-live="polite"></div>
+      </main>
+    </div>
+
+    <script src="popup.js"></script>
+  </body>
+</html>
