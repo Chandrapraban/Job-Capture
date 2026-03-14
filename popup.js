@@ -11,9 +11,11 @@ const btnSave          = document.getElementById("btn-save");
 const btnOpenSheet     = document.getElementById("btn-open-sheet");
 const statusEl         = document.getElementById("status");
 
-const alumniSection    = document.getElementById("alumni-section");
-const alumniCompanyEl  = document.getElementById("alumni-company-name");
-const alumniList       = document.getElementById("alumni-list");
+const alumniSection        = document.getElementById("alumni-section");
+const alumniCompanyEl      = document.getElementById("alumni-company-name");
+const alumniList           = document.getElementById("alumni-list");
+const inputCompanyOverride = document.getElementById("input-company-override");
+const btnSearchCompany     = document.getElementById("btn-search-company");
 
 const btnSettingsToggle = document.getElementById("btn-settings-toggle");
 const settingsPanel     = document.getElementById("settings-panel");
@@ -57,6 +59,18 @@ document.addEventListener("DOMContentLoaded", async () => {
   btnOpenSheet.addEventListener("click", () => {
     if (sheetUrl) chrome.tabs.create({ url: sheetUrl });
   });
+  btnSearchCompany.addEventListener("click", () => {
+    const company = inputCompanyOverride.value.trim();
+    if (!company) return;
+    if (extracted) extracted.company = company;
+    fieldCompany.textContent = company;
+    inputCompanyOverride.classList.add("hidden");
+    btnSearchCompany.classList.add("hidden");
+    fieldCompany.classList.remove("hidden");
+    alumniSection.classList.add("hidden");
+    showStatus("Finding alumni at " + company + "…", "loading");
+    searchAlumni(company);
+  });
 });
 
 // ── Settings ──────────────────────────────────────────────────────────────────
@@ -87,6 +101,9 @@ async function handleExtract() {
   extracted = null;
   foundAlumni = [];
   alumniSection.classList.add("hidden");
+  inputCompanyOverride.classList.add("hidden");
+  btnSearchCompany.classList.add("hidden");
+  fieldCompany.classList.remove("hidden");
   btnSave.disabled = true;
   resetFields();
   showStatus("Extracting…", "loading");
@@ -120,14 +137,26 @@ async function handleExtract() {
 
     extracted = response.data;
     fieldRole.textContent        = extracted.role        || "(not found)";
-    fieldCompany.textContent     = extracted.company     || "(not found)";
     fieldUrl.textContent         = extracted.url         || "(not found)";
     fieldUrl.title               = extracted.url         || "";
     fieldTimestamp.textContent   = fmtTime(extracted.timestamp);
     fieldDescription.textContent = extracted.description || "(not found)";
     btnSave.disabled = false;
-    showStatus("Finding Duke alumni at " + (extracted.company || "this company") + "…", "loading");
-    searchAlumni(extracted.company);
+
+    if (extracted.company) {
+      fieldCompany.textContent = extracted.company;
+      fieldCompany.classList.remove("hidden");
+      inputCompanyOverride.classList.add("hidden");
+      btnSearchCompany.classList.add("hidden");
+      showStatus("Finding Duke alumni at " + extracted.company + "…", "loading");
+      searchAlumni(extracted.company);
+    } else {
+      fieldCompany.textContent = "(not found)";
+      inputCompanyOverride.value = "";
+      inputCompanyOverride.classList.remove("hidden");
+      btnSearchCompany.classList.remove("hidden");
+      showStatus("Company not detected — enter it manually and click Search.", "info");
+    }
   });
 }
 
