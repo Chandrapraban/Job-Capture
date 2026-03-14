@@ -29,6 +29,34 @@ function doPost(e) {
 
     var alumni = payload.alumni || [];  // array of up to 10 {profileUrl, note}
 
+    // Write header row if missing
+    if (sheet.getLastRow() === 0 || sheet.getRange(1, 1).getValue() !== "Role") {
+      var headers = [
+        "Role", "Company", "URL", "Job Description",
+        "Alum 1", "Alum 1 - Connect Note",
+        "Alum 2", "Alum 2 - Connect Note",
+        "Alum 3", "Alum 3 - Connect Note",
+        "Alum 4", "Alum 4 - Connect Note",
+        "Alum 5", "Alum 5 - Connect Note",
+        "Alum 6", "Alum 6 - Connect Note",
+        "Alum 7", "Alum 7 - Connect Note",
+        "Alum 8", "Alum 8 - Connect Note",
+        "Alum 9", "Alum 9 - Connect Note",
+        "Alum 10", "Alum 10 - Connect Note"
+      ];
+      if (sheet.getLastRow() === 0) {
+        sheet.appendRow(headers);
+      } else {
+        sheet.insertRowBefore(1);
+        sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
+      }
+      var hdr = sheet.getRange(1, 1, 1, 24);
+      hdr.setFontWeight("bold");
+      hdr.setBackground("#2c3e7a");
+      hdr.setFontColor("#ffffff");
+      sheet.setFrozenRows(1);
+    }
+
     // Pad alumni array to exactly 10 entries
     while (alumni.length < 10) alumni.push({ profileUrl: "", note: "" });
 
