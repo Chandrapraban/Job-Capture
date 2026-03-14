@@ -11,6 +11,10 @@ const btnSave          = document.getElementById("btn-save");
 const btnOpenSheet     = document.getElementById("btn-open-sheet");
 const statusEl         = document.getElementById("status");
 
+const alumniSection    = document.getElementById("alumni-section");
+const alumniCompanyEl  = document.getElementById("alumni-company-name");
+const alumniList       = document.getElementById("alumni-list");
+
 const btnSettingsToggle = document.getElementById("btn-settings-toggle");
 const settingsPanel     = document.getElementById("settings-panel");
 const inputScriptUrl    = document.getElementById("input-script-url");
@@ -22,6 +26,7 @@ const settingsStatus    = document.getElementById("settings-status");
 
 // ── State ─────────────────────────────────────────────────────────────────────
 let extracted   = null;
+let foundAlumni = [];
 let scriptUrl   = "";
 let secretToken = "";
 let sheetUrl    = "";
@@ -80,6 +85,8 @@ async function saveSettings() {
 // ── Extract ───────────────────────────────────────────────────────────────────
 async function handleExtract() {
   extracted = null;
+  foundAlumni = [];
+  alumniSection.classList.add("hidden");
   btnSave.disabled = true;
   resetFields();
   showStatus("Extracting…", "loading");
@@ -119,7 +126,8 @@ async function handleExtract() {
     fieldTimestamp.textContent   = fmtTime(extracted.timestamp);
     fieldDescription.textContent = extracted.description || "(not found)";
     btnSave.disabled = false;
-    showStatus("Done. Review then click Save to Sheet.", "info");
+    showStatus("Finding Duke alumni at " + (extracted.company || "this company") + "…", "loading");
+    searchAlumni(extracted.company);
   });
 }
 
@@ -151,6 +159,10 @@ async function handleSave() {
         company:     extracted.company,
         url:         extracted.url,
         description: extracted.description || "",
+        alumni:      foundAlumni.slice(0, 10).map(p => ({
+          profileUrl: p.profileUrl,
+          note:       generateNote(p, extracted.company, extracted.role),
+        })),
       }),
     });
 
@@ -190,4 +202,115 @@ function fmtTime(iso) {
       hour: "2-digit", minute: "2-digit",
     });
   } catch { return iso; }
+}
+
+// ── Alumni Search ──────────────────────────────────────────────────────────────
+function searchAlumni(company) {
+  if (!company) {
+    showStatus("Job extracted. No company found to search alumni.", "info");
+    return;
+  }
+
+  chrome.runtime.sendMessage({ type: "FIND_ALUMNI", company, role: extracted ? extracted.role : "" }, (response) => {
+    if (chrome.runtime.lastError || !response || !response.success) {
+      showStatus("Job extracted. Alumni search failed — make sure you're signed into Google.", "info");
+      return;
+    }
+    if (!response.people || response.people.length === 0) {
+      showStatus("Job extracted. No alumni found on Google.", "info");
+      return;
+    }
+
+    foundAlumni = response.people;
+    displayAlumni(response.people, company);
+    showStatus(
+      response.dukeSearch ? "Ready — Duke alumni found. Save to Sheet when done." : "Ready — limited Duke results, showing general. Save to Sheet when done.",
+      "success"
+    );
+  });
+}
+
+function displayAlumni(people, company) {
+  alumniCompanyEl.textContent = company;
+  alumniList.innerHTML = "";
+
+  for (const person of people) {
+    const note = generateNote(person, company, extracted ? extracted.role : "");
+    const item = document.createElement("div");
+    item.className = "alumni-item";
+
+    const badge = person.isDukeAlum
+      ? '<span class="duke-badge">Duke</span>'
+      : "";
+
+    item.innerHTML =
+      '<div class="alumni-name">' + escHtml(person.name) + badge + "</div>" +
+      (person.headlineHint
+        ? '<div class="alumni-headline">' + escHtml(person.headlineHint) + "</div>"
+        : "") +
+      '<div class="alumni-note">' + escHtml(note) + "</div>" +
+      '<div class="alumni-actions">' +
+        '<a class="alumni-link" href="' + escHtml(person.profileUrl) + '" target="_blank">View Profile</a>' +
+        '<button class="btn-copy-note" data-note="' + escHtml(note) + '">Copy Note</button>' +
+      "</div>";
+
+    alumniList.appendChild(item);
+  }
+
+  alumniList.querySelectorAll(".btn-copy-note").forEach(btn => {
+    btn.addEventListener("click", () => {
+      navigator.clipboard.writeText(btn.dataset.note).then(() => {
+        btn.textContent = "Copied!";
+        setTimeout(() => { btn.textContent = "Copy Note"; }, 1600);
+      });
+    });
+  });
+
+  alumniSection.classList.remove("hidden");
+}
+
+function inferCategory(role) {
+  const r = (role || "").toLowerCase();
+  if (r.includes("product"))                              return "Product";
+  if (r.includes("program"))                             return "Program";
+  if (r.includes("operations") || r.includes(" ops"))   return "Operations";
+  if (r.includes("project"))                             return "Project Management";
+  if (r.includes("engineer") || r.includes("software") || r.includes("developer")) return "Engineering";
+  if (r.includes("data") || r.includes("analytics") || r.includes("analyst"))      return "Data & Analytics";
+  if (r.includes("design") || r.includes("ux"))         return "Design";
+  if (r.includes("marketing"))                           return "Marketing";
+  if (r.includes("finance") || r.includes("financial")) return "Finance";
+  if (r.includes("supply chain") || r.includes("logistics")) return "Supply Chain";
+  if (r.includes("strategy"))                            return "Strategy";
+  if (r.includes("consult"))                             return "Consulting";
+  if (r.includes("sales"))                               return "Sales";
+  return role || "management";
+}
+
+function generateNote(person, company, role) {
+  const first    = person.name.split(" ")[0];
+  const category = inferCategory(role);
+
+  if (person.isDukeAlum) {
+    return (
+      "Hi " + first + ", I\u2019m Chandra, a Duke Engineering Management graduate student " +
+      "exploring " + category + " roles at " + company + ". As a fellow Blue Devil, " +
+      "I\u2019d love to connect and learn more about your experience there, and would appreciate " +
+      "any guidance you might be open to sharing."
+    );
+  }
+  return (
+    "Hi " + first + ", I\u2019m Chandra, a Duke Engineering Management graduate student " +
+    "exploring " + category + " roles at " + company + ". I\u2019d love to connect " +
+    "and learn more about your experience on the team, and would appreciate any guidance or " +
+    "insights you might be open to sharing \u2014 including any referral opportunities if you feel it\u2019s a good fit."
+  );
+}
+
+function escHtml(str) {
+  return String(str)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
 }

@@ -27,16 +27,25 @@ function doPost(e) {
     var ss    = SpreadsheetApp.openById(SPREADSHEET_ID);
     var sheet = ss.getSheetByName(sheetName) || ss.getSheets()[0];
 
-    if (sheet.getLastRow() === 0) {
-      sheet.appendRow(["Timestamp", "Role", "Company", "URL", "Job Description"]);
-      var hdr = sheet.getRange(1, 1, 1, 5);
-      hdr.setFontWeight("bold");
-      hdr.setBackground("#2c3e7a");
-      hdr.setFontColor("#ffffff");
-      sheet.setFrozenRows(1);
-    }
+    var alumni = payload.alumni || [];  // array of up to 10 {profileUrl, note}
 
-    sheet.appendRow([timestamp, role, company, url, description]);
+    // Pad alumni array to exactly 10 entries
+    while (alumni.length < 10) alumni.push({ profileUrl: "", note: "" });
+
+    // Always just append — one row per job
+    sheet.appendRow([
+      role, company, url, description,
+      alumni[0].profileUrl || "", alumni[0].note || "",
+      alumni[1].profileUrl || "", alumni[1].note || "",
+      alumni[2].profileUrl || "", alumni[2].note || "",
+      alumni[3].profileUrl || "", alumni[3].note || "",
+      alumni[4].profileUrl || "", alumni[4].note || "",
+      alumni[5].profileUrl || "", alumni[5].note || "",
+      alumni[6].profileUrl || "", alumni[6].note || "",
+      alumni[7].profileUrl || "", alumni[7].note || "",
+      alumni[8].profileUrl || "", alumni[8].note || "",
+      alumni[9].profileUrl || "", alumni[9].note || ""
+    ]);
 
     return respond({ success: true });
 
