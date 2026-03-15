@@ -1,11 +1,14 @@
 (function () {
   function isCurrentEmployee(snippet, title, company) {
-    if (!company) return true; // can't filter without company name
-    const c = company.toLowerCase();
+    if (!company) return true;
     const text = (snippet + " " + title).toLowerCase();
-    // Treat as current if company name appears in the text
-    // and there's no strong signal it's a past role only
-    return text.includes(c);
+    const c = company.toLowerCase();
+    // Keep if company name appears anywhere in the result
+    if (text.includes(c)) return true;
+    // Also keep if we can't tell — only exclude if it looks clearly past
+    // e.g. "Former ... at [company]" or "Previously at [company]"
+    const pastSignals = ["former " + c, "previously at " + c, "ex-" + c, "ex " + c];
+    return !pastSignals.some(s => text.includes(s));
   }
 
   function extractResults(company) {

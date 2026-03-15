@@ -47,7 +47,7 @@ async function findAlumni(company, role) {
 }
 
 async function googleSearch(query) {
-  const url = `https://www.google.com/search?q=${encodeURIComponent(query)}&num=10`;
+  const url = `https://www.google.com/search?q=${encodeURIComponent(query)}&num=20`;
   const tab = await chrome.tabs.create({ url, active: false });
 
   try {
