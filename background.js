@@ -10,43 +10,34 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
 });
 
 async function findAlumni(company, role) {
-  const seen = new Set();
   const people = [];
 
-  // Helper: add results to pool, deduping by profileUrl
-  function absorb(results) {
-    for (const p of results) {
-      if (people.length >= 10) break;
-      if (!p.profileUrl || seen.has(p.profileUrl)) continue;
-      seen.add(p.profileUrl);
-      people.push(p);
-    }
+  // Pass 1: role-relevant people at the company
+  if (role && people.length < 10) {
+    const results = await googleSearch(`site:linkedin.com/in "${company}" "${role}"`, company);
+    absorb(people, results);
   }
 
-  // 1. Duke alums at company, relevant to role
-  if (role) {
-    absorb(await googleSearch(`site:linkedin.com/in "Duke University" "${company}" "${role}"`));
-  }
-
-  // 2. Duke alums at company (no role filter)
+  // Pass 2: anyone at the company (fills up to 10)
   if (people.length < 10) {
-    absorb(await googleSearch(`site:linkedin.com/in "Duke University" "${company}"`));
-  }
-
-  // 3. Anyone at company relevant to role
-  if (people.length < 10 && role) {
-    absorb(await googleSearch(`site:linkedin.com/in "${company}" "${role}"`));
-  }
-
-  // 4. Anyone at company (broad fallback)
-  if (people.length < 10) {
-    absorb(await googleSearch(`site:linkedin.com/in "${company}"`));
+    const results = await googleSearch(`site:linkedin.com/in "${company}"`, company);
+    absorb(people, results);
   }
 
   return { success: true, people: people.slice(0, 10) };
 }
 
-async function googleSearch(query) {
+function absorb(people, results) {
+  const seen = new Set(people.map(p => p.profileUrl));
+  for (const p of results) {
+    if (people.length >= 10) break;
+    if (!p.profileUrl || seen.has(p.profileUrl)) continue;
+    seen.add(p.profileUrl);
+    people.push(p);
+  }
+}
+
+async function googleSearch(query, company) {
   const url = `https://www.google.com/search?q=${encodeURIComponent(query)}&num=20`;
   const tab = await chrome.tabs.create({ url, active: false });
 
